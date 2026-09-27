@@ -163,3 +163,85 @@ def finish_file(
             archivo_id,
         ),
     )
+
+def create_sheet_record(
+    cur,
+    archivo_id,
+    dataset_id,
+    sheet_name: str,
+    dia_tipo,
+    content_hash: str,
+    rows_read: int,
+):
+
+    cur.execute(
+        '''
+        insert into carga.hoja_etl (
+            archivo_id,
+            dataset_id,
+            nombre_hoja,
+            tipo_hoja,
+            dia_tipo,
+            sha256_contenido,
+            filas_leidas,
+            estado
+        )
+        values (
+            %s,%s,%s,'DET',
+            %s,%s,%s,'CARGANDO'
+        )
+        returning id
+        ''',
+        (
+            archivo_id,
+            dataset_id,
+            sheet_name,
+            dia_tipo,
+            content_hash,
+            rows_read,
+        ),
+    )
+
+    return cur.fetchone()[0]
+
+def finish_sheet(
+    cur,
+    sheet_id,
+    status: str,
+    loaded: int = 0,
+    rejected: int = 0,
+    message=None,
+):
+
+    cur.execute(
+        '''
+        update carga.hoja_etl
+        set estado = %s,
+            filas_cargadas = %s,
+            filas_rechazadas = %s,
+            mensaje_error = %s,
+            finalizado_en = %s
+        where id = %s
+        ''',
+        (
+            status,
+            loaded,
+            rejected,
+            message,
+            datetime.now(
+                timezone.utc
+            ),
+            sheet_id,
+        ),
+    )
+
+def recalculate_pso_validity(
+    cur
+):
+
+    cur.execute(
+        '''
+        select
+            carga.recalcular_vigencias_pso()
+        '''
+    )

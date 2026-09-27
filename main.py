@@ -1,14 +1,15 @@
 import argparse
-
-
-
-
 from pathlib import Path
 
 from src.load.loaders import (
     cargar_archivo_usos,
     cargar_carpeta_usos,
     cargar_dia_tipo,
+)
+
+from src.load.pso_loader import (
+    cargar_archivo_pso,
+    cargar_carpeta_pso,
 )
 
 from src.database.database import (
@@ -49,10 +50,6 @@ def main():
         )
     )
 
-    # --------------------------------------------------------
-    # Archivo o carpeta
-    # --------------------------------------------------------
-
     grupo_usos = (
         parser_usos.add_mutually_exclusive_group(
             required=True
@@ -62,9 +59,7 @@ def main():
     grupo_usos.add_argument(
         "--file",
         type=Path,
-        help=(
-            "Carga un único archivo Excel."
-        )
+        help="Carga un único archivo Excel."
     )
 
     grupo_usos.add_argument(
@@ -75,10 +70,6 @@ def main():
             "de una carpeta."
         )
     )
-
-    # --------------------------------------------------------
-    # Recursividad
-    # --------------------------------------------------------
 
     parser_usos.add_argument(
         "--recursive",
@@ -105,9 +96,7 @@ def main():
         "--file",
         required=True,
         type=Path,
-        help=(
-            "Archivo Excel de Día Tipo."
-        )
+        help="Archivo Excel de Día Tipo."
     )
 
     parser_dia_tipo.add_argument(
@@ -116,6 +105,48 @@ def main():
         help=(
             "Nombre de la hoja que contiene "
             "FECHA y DIA TIPO."
+        )
+    )
+
+    # ========================================================
+    # COMANDO PSO
+    # ========================================================
+
+    parser_pso = subparsers.add_parser(
+        "pso",
+        help=(
+            "Carga archivos del Plan de "
+            "Servicios de Operación - PSO"
+        )
+    )
+
+    grupo_pso = (
+        parser_pso.add_mutually_exclusive_group(
+            required=True
+        )
+    )
+
+    grupo_pso.add_argument(
+        "--file",
+        type=Path,
+        help="Carga un único archivo PSO."
+    )
+
+    grupo_pso.add_argument(
+        "--folder",
+        type=Path,
+        help=(
+            "Carga todos los archivos PSO "
+            "de una carpeta."
+        )
+    )
+
+    parser_pso.add_argument(
+        "--recursive",
+        action="store_true",
+        help=(
+            "Busca archivos PSO también "
+            "en subcarpetas."
         )
     )
 
@@ -132,10 +163,6 @@ def main():
         # ====================================================
 
         if args.command == "usos":
-
-            # -----------------------------------------------
-            # UN SOLO ARCHIVO
-            # -----------------------------------------------
 
             if args.file is not None:
 
@@ -159,10 +186,6 @@ def main():
                         args.file
                     )
                 )
-
-            # -----------------------------------------------
-            # TODA UNA CARPETA
-            # -----------------------------------------------
 
             elif args.folder is not None:
 
@@ -205,6 +228,63 @@ def main():
                 path=args.file,
                 sheet_name=args.sheet
             )
+
+        # ====================================================
+        # PSO
+        # ====================================================
+
+        elif args.command == "pso":
+
+            if args.file is not None:
+
+                if not args.file.exists():
+
+                    parser.error(
+                        f"No existe el archivo: "
+                        f"{args.file}"
+                    )
+
+                if not args.file.is_file():
+
+                    parser.error(
+                        f"La ruta no corresponde "
+                        f"a un archivo: "
+                        f"{args.file}"
+                    )
+
+                resultado = (
+                    cargar_archivo_pso(
+                        args.file
+                    )
+                )
+
+            elif args.folder is not None:
+
+                if not args.folder.exists():
+
+                    parser.error(
+                        f"No existe la carpeta: "
+                        f"{args.folder}"
+                    )
+
+                if not args.folder.is_dir():
+
+                    parser.error(
+                        f"La ruta no corresponde "
+                        f"a una carpeta: "
+                        f"{args.folder}"
+                    )
+
+                resultado = (
+                    cargar_carpeta_pso(
+                        folder=args.folder,
+                        recursive=args.recursive,
+                    )
+                )
+
+        # ====================================================
+        # COMANDO NO SOPORTADO
+        # ====================================================
 
         else:
 
