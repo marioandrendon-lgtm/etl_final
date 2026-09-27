@@ -1,0 +1,23 @@
+proyect:
+  name: "ETL-MIO"
+  version: "2.0.0"
+  description: "This is a sample project configuration file."
+  integrantes:
+    - name: "Liceth Viviana Leyva"
+      email: "liceth_viv.leyva@uao.edu.co"
+    - name: "Larri Ortega"
+      email: "larri.ortega@uao.edu.co"
+    - name: "Nicolás Quesada"
+      email: "nicolas.quesada@uao.edu.co"
+    - name: "Mario Rendon"
+      email: "mario_and.rendon@uao.edu.co"
+
+path:
+
+source:
+  #Los archivos de entrada se encuentran en la carpeta data/bronze
+  #Ubicación inicial E:\mrendon\Documents\2026\Maestria\ETL\Proyecto
+
+  bronze: "data/bronze"
+  silver: "data/silver"
+  gold: "data/gold"
