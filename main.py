@@ -1,19 +1,30 @@
 import argparse
 from pathlib import Path
-
+# Importa la logica de carga de loaders
 from src.load.loaders import (
     cargar_archivo_usos,
     cargar_carpeta_usos,
     cargar_dia_tipo,
 )
 
+# Importa la logica de carga de PSO
 from src.load.pso_loader import (
     cargar_archivo_pso,
     cargar_carpeta_pso,
 )
 
+# Importa la logica de carga de bases de datos
 from src.database.database import (
     close_pool,
+)
+
+# importa la logica de carga de coordenadas
+from src.load.coordenadas_loader import (
+    cargar_coordenadas,
+)
+
+from reportes.Avance2_ETL_MIO_Silver_Gold_KPI import (
+    main as generar_reportes,
 )
 
 
@@ -151,6 +162,38 @@ def main():
     )
 
     # ========================================================
+    # COMANDO COORDENADAS
+    # ========================================================
+
+    parser_coordenadas = subparsers.add_parser(
+        "coordenadas",
+        help=(
+            "Carga archivo de coordenadas de paradas."
+        )
+    )
+
+    parser_coordenadas.add_argument(
+        "--file",
+        required=True,
+        type=Path,
+        help=(
+            "Archivo Excel COORDENADAS_PARADAS.xlsx."
+        )
+    )
+
+    # ========================================================
+    # COMANDO REPORTES
+    # ========================================================
+
+    parser_reportes = subparsers.add_parser(
+        "reportes",
+        help=(
+            "Genera extracts Silver/Gold, "
+            "KPIs y gráficos."
+        )
+    )
+
+    # ========================================================
     # LEER ARGUMENTOS
     # ========================================================
 
@@ -281,6 +324,46 @@ def main():
                         recursive=args.recursive,
                     )
                 )
+
+        # ====================================================
+        # COORDENADAS
+        # ====================================================
+        
+        elif args.command == "coordenadas":
+
+            if not args.file.exists():
+
+                parser.error(
+                    f"No existe el archivo: "
+                    f"{args.file}"
+                )
+
+            if not args.file.is_file():
+
+                parser.error(
+                    f"La ruta no corresponde aun archivo: "
+                    f"{args.file}"
+                )
+
+            resultado = cargar_coordenadas(
+                args.file
+            )
+
+        # ====================================================
+        # REPORTES
+        # ====================================================
+            
+
+        elif args.command == "reportes":
+
+            generar_reportes()
+
+            resultado = {
+                "estado": "COMPLETADO",
+                "proceso": (
+                    "Generación de extracts Silver/Gold, KPIs y gráficos"
+                ),
+            }
 
         # ====================================================
         # COMANDO NO SOPORTADO
