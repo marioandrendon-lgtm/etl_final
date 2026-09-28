@@ -23,7 +23,7 @@ from src.load.coordenadas_loader import (
     cargar_coordenadas,
 )
 
-from reportes.Avance2_ETL_MIO_Silver_Gold_KPI import (
+from reportes.Avance2 import (
     main as generar_reportes,
 )
 
@@ -74,7 +74,7 @@ def main():
     )
 
     grupo_usos.add_argument(
-        "--folder",
+        "--carpeta",
         type=Path,
         help=(
             "Carga todos los archivos .xlsx "
@@ -230,26 +230,26 @@ def main():
                     )
                 )
 
-            elif args.folder is not None:
+            elif args.carpeta is not None:
 
-                if not args.folder.exists():
+                if not args.carpeta.exists():
 
                     parser.error(
                         f"No existe la carpeta: "
-                        f"{args.folder}"
+                        f"{args.carpeta}"
                     )
 
-                if not args.folder.is_dir():
+                if not args.carpeta.is_dir():
 
                     parser.error(
                         f"La ruta no corresponde "
                         f"a una carpeta: "
-                        f"{args.folder}"
+                        f"{args.carpeta}"
                     )
 
                 resultado = (
                     cargar_carpeta_usos(
-                        folder=args.folder,
+                        folder=args.carpeta,
                         recursive=args.recursive
                     )
                 )

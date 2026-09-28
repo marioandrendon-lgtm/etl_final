@@ -1,9 +1,7 @@
 """
+================================================================
 ETL MIO: transición Bronze–Silver–Gold, extracts y KPIs de carga
 ================================================================
-
-Equivalente en Python del archivo:
-Avance2_ETL_MIO_Silver_Gold_KPI.Rmd
 
 Propósito:
 - Consultar PostgreSQL/Supabase como fuente de verdad.
@@ -29,6 +27,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import psycopg
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 
 
 # ============================================================
@@ -59,11 +59,7 @@ for directory in (
 
 PERFIL_COORDENADAS = pd.DataFrame(
     [
-        {"hoja": "PSO 251124", "fecha_inicio": "2025-11-24", "filas_validas": 2071},
         {"hoja": "PSO 260316", "fecha_inicio": "2026-03-16", "filas_validas": 2072},
-        {"hoja": "PSO 260609", "fecha_inicio": "2026-06-09", "filas_validas": 2073},
-        {"hoja": "PSO 260721", "fecha_inicio": "2026-07-21", "filas_validas": 2074},
-        {"hoja": "PSO 260803", "fecha_inicio": "2026-08-03", "filas_validas": 2074},
     ]
 )
 
@@ -153,24 +149,28 @@ INVENTARIO_FUENTES = pd.DataFrame(
             "version_corte": "Snapshots PSO 251124 a PSO 260803",
             "mecanismo": "Excel multihoja -> Python -> PostgreSQL",
         },
-        {
-            "fuente": "GTFS estático",
-            "estado_actual": "Pendiente",
-            "version_corte": "Por documentar",
-            "mecanismo": "Debe definirse mecanismo reproducible",
-        },
-        {
-            "fuente": "Límites de comunas",
-            "estado_actual": "Pendiente",
-            "version_corte": "Por documentar",
-            "mecanismo": "Debe definirse archivo/servicio y fecha de corte",
-        },
-        {
-            "fuente": "Población",
-            "estado_actual": "Pendiente",
-            "version_corte": "Por documentar",
-            "mecanismo": "Debe definirse fuente, año y versión",
-        },
+        
+        #Pendiente para carga futura de fuentes espaciales y poblacionales:
+        #{
+        #    "fuente": "GTFS estático",
+        #    "estado_actual": "Pendiente",
+        #    "version_corte": "Por documentar",
+        #    "mecanismo": "Debe definirse mecanismo reproducible",
+        #},
+        #
+        #{
+        #    "fuente": "Límites de comunas",
+        #    "estado_actual": "Pendiente",
+        #    "version_corte": "Por documentar",
+        #    "mecanismo": "Debe definirse archivo/servicio y fecha de corte",
+        #},
+        #{
+        #    "fuente": "Población",
+        #    "estado_actual": "Pendiente",
+        #    "version_corte": "Por documentar",
+        #    "mecanismo": "Debe definirse fuente, año y versión",
+        #},
+        
     ]
 )
 
@@ -198,16 +198,22 @@ def validate_environment() -> None:
         )
 
 
-def get_connection():
+def get_engine():
     validate_environment()
 
-    return psycopg.connect(
+    url = URL.create(
+        drivername="postgresql+psycopg",
+        username=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
         port=int(os.getenv("DB_PORT", "5432")),
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        sslmode="require",
+        database=os.getenv("DB_NAME"),
+        query={"sslmode": "require"},
+    )
+
+    return create_engine(
+        url,
+        pool_pre_ping=True,
     )
 
 
