@@ -82,3 +82,7 @@ Desktop.ini
 # ============================================================
 
 ~$*
+
+# Salidas generadas por reportes
+salidas/
+reportes/salidas/
