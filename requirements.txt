@@ -7,4 +7,13 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 python-multipart>=0.0.9
 matplotlib>=3.8.0
-sqlalchemy>=2.1.1
+SQLAlchemy>=4.6.0
+
+#Importe Librerías para temas geoespaciales
+geopandas>=1.0
+pyogrio>=0.9
+shapely>=2.0
+pyproj>=3.6
+pyarrow>=16
+PyYAML>=6.0
+GeoAlchemy2>=0.15

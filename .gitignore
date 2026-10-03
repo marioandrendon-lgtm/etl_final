@@ -10,6 +10,7 @@ __pycache__/
 # ENTORNO VIRTUAL
 # ============================================================
 .env
+.venv/
 venv/
 env/
 
@@ -83,6 +84,19 @@ Desktop.ini
 
 ~$*
 
+# ============================================================
+# SALIDAS REPORTES
+# ============================================================
 # Salidas generadas por reportes
 salidas/
 reportes/salidas/
+
+# ============================================================
+# ARCHIVOS GEOESPACIALES
+# ============================================================
+data/bronze/geografia/divipola_2026/
+data/silver/geografia/*.parquet
+data/silver/geografia/*.geojson
+data/gold/geografia/*.parquet
+data/gold/geografia/*.geojson
+data/gold/geografia/*.json

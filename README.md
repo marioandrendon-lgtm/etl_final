@@ -12,6 +12,7 @@ El proyecto soporta actualmente los siguientes conjuntos de datos:
 - UsosValidador
 - Día Tipo
 - Plan de Servicios de Operación (PSO)
+- Coordenadas de paradas (archivo Excel multihoja)
 
 La carga se realiza directamente sobre PostgreSQL mediante `psycopg`, manteniendo mecanismos de:
 
@@ -42,20 +43,19 @@ ETL-MIO/
 │   ├── config.py
 │   └── config.yaml
 │
-├── sql/
-│   └── 01_setup.sql
-│
 ├── src/
 │   ├── database/
 │   │   └── database.py
 │   │
 │   ├── extract/
 │   │   ├── readers.py
-│   │   └── pso_reader.py
+│   │   ├── pso_reader.py
+│   │   └── coordenadas_reader.py
 │   │
 │   ├── load/
 │   │   ├── loaders.py
-│   │   └── pso_loader.py
+│   │   ├── pso_loader.py
+│   │   └── coordenadas_loader.py
 │   │
 │   ├── quality/
 │   │   └── audit.py
@@ -65,6 +65,13 @@ ETL-MIO/
 │   └── utils/
 │       └── utils.py
 │
+├── reportes/
+│   ├── Avance2.py
+│   └── salidas/
+│       ├── silver/
+│       ├── gold/
+│       ├── kpi/
+│       └── graficos/
 ├── main.py
 ├── requirements.txt
 ├── .gitignore
@@ -117,13 +124,7 @@ pip install -r requirements.txt
 
 ## 5. Inicialización de la base de datos
 
-Ejecutar el script:
-
-```text
-sql/01_setup.sql
-```
-
-Este script contiene la estructura base utilizada por el ETL para los esquemas de carga, almacenamiento Bronze y consulta.
+`sql/01_setup.sql` fue retirado y ya no es un paso de inicialización. Para coordenadas y las vistas de consulta, los scripts documentados son `sql/03_coordenadas.sql` y `sql/04_silver_gold.sql` cuando estén presentes en el repositorio. Antes de ejecutar cargas, verifique que las tablas de auditoría y Bronze requeridas existan en la base de datos; este README no sustituye sus migraciones.
 
 ---
 
@@ -300,7 +301,19 @@ python main.py pso --folder "E:\ruta\pso" --recursive
 
 ---
 
-# 9. Auditoría
+# 9. Coordenadas de paradas
+
+El subcomando `coordenadas` lee `COORDENADAS_PARADAS.xlsx` y envía la carga al módulo `src/load/coordenadas_loader.py`:
+
+```powershell
+python main.py coordenadas --file "E:\ruta\COORDENADAS_PARADAS.xlsx"
+```
+
+La integración de las versiones o snapshots PSO se consulta posteriormente desde `silver.dim_parada_actual`, `silver.puente_ruta_parada` y `gold.kpi_coordenadas`, si dichas vistas existen. Registre la fecha de vigencia de cada snapshot y compruebe los códigos y las coordenadas antes de usar sus resultados.
+
+---
+
+# 10. Auditoría
 
 La auditoría se gestiona principalmente mediante:
 
@@ -341,7 +354,7 @@ Entre los datos registrados se incluyen:
 
 ---
 
-# 10. Idempotencia
+# 11. Idempotencia
 
 El ETL implementa controles para evitar cargas duplicadas.
 
@@ -383,7 +396,7 @@ SHA-256 lógico del dataset completo
 
 ---
 
-# 11. Vigencias PSO
+# 12. Vigencias PSO
 
 Cada PSO tiene una fecha de inicio de vigencia obtenida desde el nombre del archivo.
 
@@ -413,7 +426,7 @@ La actualización de vigencias se realiza después de completar satisfactoriamen
 
 ---
 
-# 12. Transacciones
+# 13. Transacciones
 
 La carga se ejecuta utilizando transacciones PostgreSQL.
 
@@ -461,7 +474,7 @@ evitando dejar una carga parcialmente confirmada.
 
 ---
 
-# 13. Manejo de valores nulos
+# 14. Manejo de valores nulos
 
 Durante la transformación, Pandas puede representar valores faltantes mediante:
 
@@ -485,7 +498,7 @@ NULL
 
 ---
 
-# 14. API
+# 15. API
 
 La API se ejecuta mediante FastAPI.
 
@@ -509,7 +522,31 @@ La carga PSO se encuentra actualmente implementada en el proceso ETL por línea 
 
 ---
 
-# 15. Comandos disponibles
+# 16. Reportes Silver, Gold y calidad
+
+El subcomando `reportes` invoca `reportes/Avance2.py` y consulta PostgreSQL para producir extractos CSV e imágenes PNG:
+
+```powershell
+python main.py reportes
+```
+
+| Capa | Objetos consultados | Salidas |
+| --- | --- | --- |
+| Auditoría | `carga.archivo_etl`, `carga.dataset_etl` | `reportes/salidas/kpi/auditoria_cargas.csv`, consistencia y duplicados |
+| Silver | `silver.fact_usos_hora`, `silver.dim_parada_actual`, `silver.puente_ruta_parada` | `reportes/salidas/silver/*.csv` |
+| Gold | `gold.demanda_diaria`, `gold.demanda_estacion_dia_tipo` | `reportes/salidas/gold/*.csv` |
+| KPIs | `gold.kpi_carga_dataset`, `gold.kpi_carga_archivo`, `gold.kpi_coordenadas` | `reportes/salidas/kpi/*.csv` |
+| Gráficos | Consultas de demanda y calidad | `reportes/salidas/graficos/*.png` |
+
+La conexión de reportes requiere `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` en el entorno. El módulo adjunto utiliza `SQLAlchemy` y `psycopg` para PostgreSQL, y `pandas` y `matplotlib` para la generación de salidas. Si se habilita exportación a Excel, se necesita `openpyxl` y una conversión de las fechas con zona horaria en una copia del DataFrame antes de exportar.
+
+**Estado de la copia disponible:** `reportes/Avance2.py` define `get_engine()` pero llama a `get_connection()` sin definirla; debe integrarse la corrección de conexión antes de ejecutar `reportes`. La función `export_if_data` de esa copia acepta solo dos argumentos y exporta CSV. La generación de XLSX y las etiquetas de datos en gráficos discutidas hoy no aparecen todavía en los archivos adjuntos, por lo cual no se presentan como funcionalidades verificadas.
+
+Los reportes actuales tratan auditoría de cargas y demanda operacional. No implementan todavía la conciliación financiera completa entre tap, autorización, ledger, clearing y banco.
+
+---
+
+# 17. Comandos disponibles
 
 Consultar ayuda general:
 
@@ -523,6 +560,8 @@ Los subcomandos principales son:
 usos
 dia-tipo
 pso
+coordenadas
+reportes
 ```
 
 Consultar la ayuda específica de PSO:
@@ -533,7 +572,7 @@ python main.py pso --help
 
 ---
 
-# 16. Flujo de desarrollo Git
+# 18. Flujo de desarrollo Git
 
 El desarrollo debe realizarse mediante ramas de trabajo.
 
@@ -569,7 +608,7 @@ Los archivos de pruebas locales y configuraciones sensibles deben permanecer fue
 
 ---
 
-# 17. Estado actual
+# 19. Estado actual
 
 El proyecto cuenta con una línea base funcional para:
 
@@ -578,6 +617,8 @@ El proyecto cuenta con una línea base funcional para:
 - carga de UsosValidador;
 - carga de Día Tipo;
 - carga de PSO;
+- comando de carga de coordenadas;
+- comando de generación de reportes Silver/Gold, KPI y gráficos;
 - auditoría de archivos;
 - auditoría de datasets;
 - auditoría por hojas PSO;
@@ -590,4 +631,4 @@ El proyecto cuenta con una línea base funcional para:
 - vigencias PSO;
 - API básica de carga y consulta.
 
-El desarrollo continúa orientado a consolidar la arquitectura ETL y ampliar posteriormente las capas Silver y Gold.
+La ejecución de los reportes requiere resolver la discrepancia de conexión señalada en la sección 16 y disponer de las vistas SQL correspondientes. La sincronización Git y el estado real del repositorio no se verificaron con los archivos adjuntos.
