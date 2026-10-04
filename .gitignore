@@ -18,6 +18,7 @@ env/
 # ENTORNO TEST
 # ============================================================
 test/
+test/*
 test/*py
 test/*ipynb
 
