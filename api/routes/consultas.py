@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Query
 
-from src.database import pool
+from src.database.database import get_connection
 
 router = APIRouter()
 
@@ -10,7 +10,7 @@ def usos_validador_diarios(
     fecha_inicio: date,
     fecha_fin: date,
 ):
-    with pool.connection() as conn:
+    with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 '''
@@ -47,7 +47,7 @@ def auditoria(
         le=1000,
     ),
 ):
-    with pool.connection() as conn:
+    with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 '''
